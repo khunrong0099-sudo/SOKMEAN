@@ -185,6 +185,11 @@ app.post('/post-item', adminAuth, memoryUpload.fields([
             fileUrl = result.secure_url;
         }
 
+        // If no file uploaded, use the download URL field
+        if (!fileUrl && req.body.downloadUrl) {
+            fileUrl = req.body.downloadUrl;
+        }
+
         const newProduct = new Product({
             name: req.body.itemName,
             category: req.body.category || 'Other',
