@@ -88,7 +88,7 @@ app.get('/product/:id', async (req, res) => {
 
 // Admin Authentication Middleware
 const ADMIN_USER = 'SOKMEAN';
-const ADMIN_PASS = 'sokmean12311321';
+const ADMIN_PASS = '12311321';
 const AUTH_TOKEN = 'sokmean_admin_secret_2024';
 
 function adminAuth(req, res, next) {
