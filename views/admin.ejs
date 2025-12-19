@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Admin - SOKMEAN</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg,
+                    #122d88 0%,
+                    #000000 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .dashboard {
+            display: flex;
+            gap: 2rem;
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        .form-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 350px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        .btn-post {
+            width: 100%;
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <nav
+        style="background: rgb(240, 239, 239); padding: 1rem 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; margin: -2rem -2rem 2rem -2rem; width: calc(100% + 4rem);">
+        <a href="/" style="text-decoration: none; display: flex; align-items: center; gap: 10px;">
+            <img src="/logo.png" alt="Logo" style="height: 40px; width: auto;">
+            <h2 style="margin:0; color: #2563eb;">SOKMEAN</h2>
+        </a>
+        <div style="display: flex; gap: 20px;">
+            <a href="/about" style="text-decoration: none; color: #0a3777; font-weight: 500;">About Us</a>
+            <a href="/admin" style="text-decoration: none; color: #052c61; font-weight: 500;">Admin Dashboard</a>
+        </div>
+    </nav>
+    <h1 style="text-align:center; color: white;">Admin Dashboard</h1>
+    <div class="dashboard">
+        <div class="form-box">
+            <form action="/post-item" method="POST" enctype="multipart/form-data">
+                <input type="text" name="itemName" placeholder="Product Name" required>
+                <select name="category">
+                    <option value="IPA">IPA</option>
+                    <option value="esign">esign</option>
+                    <option value="sys store">sys store</option>
+                    <optgroup label="Game Accounts">
+                        <option value="MLBB">MLBB Account</option>
+                        <option value="PUBG">PUBG Account</option>
+                    </optgroup>
+                    <option value="Other">Other</option>
+                </select>
+                <input type="number" step="0.01" name="itemPrice" placeholder="Price">
+                <textarea name="description" placeholder="Description..."></textarea>
+                <input type="file" name="productImages" accept="image/*" multiple>
+                <input type="file" name="myFile">
+                <button type="submit" class="btn-post">Post Product</button>
+            </form>
+            <br><a href="/" style="text-decoration: none; color: #2563eb;">← Back to Store</a>
+        </div>
+    </div>
+</body>
+
+</html>

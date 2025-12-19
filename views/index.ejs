@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>SOKMEAN</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #059669;
+            --bg: #f8fafc;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg,
+                    #122d88 0%,
+                    #000000 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        nav {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .filter-bar {
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 20px;
+            border-radius: 20px;
+            background: white;
+            border: 1px solid #ddd;
+            text-decoration: none;
+            color: #64748b;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: #e2e8f0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .category-tag {
+            background: #eff6ff;
+            color: #2563eb;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .price {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--success);
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            background: var(--primary);
+            color: white;
+        }
+
+        .footer-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <nav style="background: rgb(240, 239, 239);">
+        <a href="/" style="text-decoration: none; display: flex; align-items: center; gap: 10px;">
+            <img src="/logo.png" alt="Logo" style="height: 40px; width: auto;">
+            <h2 style="margin:0; color: #2563eb;">SOKMEAN</h2>
+        </a>
+        <div style="display: flex; gap: 20px;">
+            <a href="/about" style="text-decoration: none; color: #0a3777; font-weight: 500;">About Us</a>
+            <a href="/admin" style="text-decoration: none; color: #052c61; font-weight: 500;">Admin Dashboard</a>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="filter-bar">
+            <a href="/" class="filter-btn <%= selectedCategory === 'All' ? 'active' : '' %>">All Items</a>
+            <a href="/?cat=IPA" class="filter-btn <%= selectedCategory === 'IPA' ? 'active' : '' %>">IPA</a>
+            <a href="/?cat=MLBB" class="filter-btn <%= selectedCategory === 'MLBB' ? 'active' : '' %>">MLBB</a>
+            <a href="/?cat=PUBG" class="filter-btn <%= selectedCategory === 'PUBG' ? 'active' : '' %>">PUBG</a>
+            <a href="/?cat=esign" class="filter-btn <%= selectedCategory === 'esign' ? 'active' : '' %>">esign</a>
+            <a href="/?cat=sys store" class="filter-btn <%= selectedCategory === 'sys store' ? 'active' : '' %>">sys
+                store</a>
+        </div>
+        <div class="grid">
+            <% items.slice().reverse().forEach(item=> { %>
+                <div class="card">
+                    <a href="/product/<%= item.id %>">
+                        <% if (item.imageNames && item.imageNames.length> 0) { %>
+                            <img src="/downloads/<%= item.imageNames[0] %>" class="card-img">
+                            <% } else { %>
+                                <div class="card-img"
+                                    style="display:flex; align-items:center; justify-content:center; color:#94a3b8">No
+                                    Image</div>
+                                <% } %>
+                    </a>
+                    <div class="card-content">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span class="category-tag">
+                                <%= item.category %>
+                            </span>
+                        </div>
+                        <h3 style="margin: 0.5rem 0;">
+                            <%= item.name %>
+                        </h3>
+                        <div class="footer-info">
+                            <div class="price">
+                                <%= item.price> 0 ? '$' + item.price : 'FREE' %>
+                            </div>
+                            <a href="/product/<%= item.id %>" class="btn">Details</a>
+                        </div>
+                    </div>
+                </div>
+                <% }) %>
+        </div>
+    </div>
+</body>
+
+</html>
