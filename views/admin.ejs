@@ -153,6 +153,35 @@
 
                 <!-- Progress Bar -->
                 <div id="progressContainer" style="display: none; margin: 10px 0;">
+                    <style>
+                        @keyframes pulse {
+
+                            0%,
+                            100% {
+                                opacity: 1;
+                            }
+
+                            50% {
+                                opacity: 0.5;
+                            }
+                        }
+
+                        @keyframes slideRight {
+                            0% {
+                                background-position: -200% 0;
+                            }
+
+                            100% {
+                                background-position: 200% 0;
+                            }
+                        }
+
+                        .processing-bar {
+                            background: linear-gradient(90deg, #2563eb, #059669, #2563eb);
+                            background-size: 200% 100%;
+                            animation: slideRight 1.5s ease-in-out infinite;
+                        }
+                    </style>
                     <div style="background: #e2e8f0; border-radius: 10px; overflow: hidden; height: 25px;">
                         <div id="progressBar"
                             style="background: linear-gradient(90deg, #2563eb, #059669); height: 100%; width: 0%; transition: width 0.3s; display: flex; align-items: center; justify-content: center;">
@@ -193,9 +222,12 @@
                         progressText.textContent = percent + '%';
 
                         if (percent < 100) {
-                            uploadStatus.textContent = 'Uploading... ' + percent + '%';
+                            uploadStatus.textContent = '📤 Uploading to server... ' + percent + '%';
                         } else {
-                            uploadStatus.textContent = 'Processing... Please wait';
+                            // Add animated class for processing phase
+                            progressBar.classList.add('processing-bar');
+                            progressText.textContent = '☁️';
+                            uploadStatus.innerHTML = '☁️ <b>Uploading to Cloud...</b> This may take a minute for large files';
                         }
                     }
                 });
