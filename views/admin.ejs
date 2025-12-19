@@ -50,6 +50,69 @@
             font-weight: bold;
             cursor: pointer;
         }
+
+        .product-list {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            flex: 1;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .product-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            gap: 10px;
+        }
+
+        .product-item:last-child {
+            border-bottom: none;
+        }
+
+        .product-info {
+            flex: 1;
+        }
+
+        .product-name {
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .product-price {
+            color: #059669;
+            font-weight: bold;
+        }
+
+        .btn-delete {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn-edit {
+            background: #f59e0b;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .price-input {
+            width: 80px;
+            padding: 4px 8px;
+            margin: 0;
+        }
     </style>
 </head>
 
@@ -60,14 +123,17 @@
             <img src="/logo.png" alt="Logo" style="height: 40px; width: auto;">
             <h2 style="margin:0; color: #2563eb;">SOKMEAN</h2>
         </a>
-        <div style="display: flex; gap: 20px;">
+        <div style="display: flex; gap: 20px; align-items: center;">
             <a href="/about" style="text-decoration: none; color: #0a3777; font-weight: 500;">About Us</a>
             <a href="/admin" style="text-decoration: none; color: #052c61; font-weight: 500;">Admin Dashboard</a>
+            <a href="/logout"
+                style="text-decoration: none; color: white; background: #dc2626; padding: 6px 14px; border-radius: 6px; font-weight: 500;">Logout</a>
         </div>
     </nav>
     <h1 style="text-align:center; color: white;">Admin Dashboard</h1>
     <div class="dashboard">
         <div class="form-box">
+            <h3 style="margin-top: 0;">Add New Product</h3>
             <form action="/post-item" method="POST" enctype="multipart/form-data">
                 <input type="text" name="itemName" placeholder="Product Name" required>
                 <select name="category">
@@ -87,6 +153,38 @@
                 <button type="submit" class="btn-post">Post Product</button>
             </form>
             <br><a href="/" style="text-decoration: none; color: #2563eb;">← Back to Store</a>
+        </div>
+
+        <div class="product-list">
+            <h3 style="margin-top: 0;">Manage Products (<%= items.length %>)</h3>
+            <% if (items.length===0) { %>
+                <p style="color: #64748b;">No products yet.</p>
+                <% } else { %>
+                    <% items.forEach(item=> { %>
+                        <div class="product-item">
+                            <div class="product-info">
+                                <div class="product-name">
+                                    <%= item.name %>
+                                </div>
+                                <div class="product-price">$<%= item.price %>
+                                </div>
+                                <small style="color: #64748b;">
+                                    <%= item.category %>
+                                </small>
+                            </div>
+                            <form action="/update-price/<%= item._id %>" method="POST"
+                                style="display: flex; gap: 5px; align-items: center;">
+                                <input type="number" step="0.01" name="newPrice" value="<%= item.price %>"
+                                    class="price-input">
+                                <button type="submit" class="btn-edit">Update</button>
+                            </form>
+                            <form action="/delete-item/<%= item._id %>" method="POST" style="margin: 0;"
+                                onsubmit="return confirm('Delete this product?')">
+                                <button type="submit" class="btn-delete">Delete</button>
+                            </form>
+                        </div>
+                        <% }) %>
+                            <% } %>
         </div>
     </div>
 </body>

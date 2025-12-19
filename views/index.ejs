@@ -152,9 +152,9 @@
         <div class="grid">
             <% items.slice().reverse().forEach(item=> { %>
                 <div class="card">
-                    <a href="/product/<%= item.id %>">
-                        <% if (item.imageNames && item.imageNames.length> 0) { %>
-                            <img src="/downloads/<%= item.imageNames[0] %>" class="card-img">
+                    <a href="/product/<%= item._id %>">
+                        <% if (item.imageUrls && item.imageUrls.length> 0) { %>
+                            <img src="<%= item.imageUrls[0] %>" class="card-img">
                             <% } else { %>
                                 <div class="card-img"
                                     style="display:flex; align-items:center; justify-content:center; color:#94a3b8">No
@@ -174,7 +174,7 @@
                             <div class="price">
                                 <%= item.price> 0 ? '$' + item.price : 'FREE' %>
                             </div>
-                            <a href="/product/<%= item.id %>" class="btn">Details</a>
+                            <a href="/product/<%= item._id %>" class="btn">Details</a>
                         </div>
                     </div>
                 </div>

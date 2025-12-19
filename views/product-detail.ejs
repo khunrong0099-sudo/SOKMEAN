@@ -225,15 +225,20 @@
         <div class="image-section">
             <div class="main-img-container">
                 <button class="nav-arrow prev-arrow" onclick="moveSlide(-1)">❮</button>
-                <img src="/downloads/<%= item.imageNames[0] %>" id="mainImage">
-                <button class="nav-arrow next-arrow" onclick="moveSlide(1)">❯</button>
+                <% if (item.imageUrls && item.imageUrls.length> 0) { %>
+                    <img src="<%= item.imageUrls[0] %>" id="mainImage">
+                    <% } else { %>
+                        <div id="mainImage"
+                            style="display:flex;align-items:center;justify-content:center;color:#94a3b8">No Image</div>
+                        <% } %>
+                            <button class="nav-arrow next-arrow" onclick="moveSlide(1)">❯</button>
             </div>
 
             <div class="gallery">
-                <% item.imageNames.forEach((img, index)=> { %>
-                    <img src="/downloads/<%= img %>" onclick="setMainImage(this.src, <%= index %>)"
+                <% if (item.imageUrls) { item.imageUrls.forEach((img, index)=> { %>
+                    <img src="<%= img %>" onclick="setMainImage(this.src, <%= index %>)"
                         class="<%= index === 0 ? 'active' : '' %>">
-                    <% }) %>
+                    <% }) } %>
             </div>
         </div>
 
@@ -261,7 +266,7 @@
             <% if (item.fileName) { %>
                 <a href="/downloads/<%= item.fileName %>" class="buy-btn" download>Download Now</a>
                 <% } else { %>
-                    <button class="buy-btn" onclick="alert('Contact SOKMEAN to purchase!')">Order Now</button>
+                    <a href="/about" class="buy-btn">Contact Us</a>
                     <% } %>
 
                         <a href="/"
@@ -272,7 +277,7 @@
 
     <script>
         let currentIndex = 0;
-        const images = <% - JSON.stringify(item.imageNames) %>;
+        const images = <% - JSON.stringify(item.imageUrls || []) %>;
         const mainImg = document.getElementById('mainImage');
         const thumbnails = document.querySelectorAll('.gallery img');
 
@@ -288,7 +293,9 @@
             currentIndex += step;
             if (currentIndex >= images.length) currentIndex = 0;
             if (currentIndex < 0) currentIndex = images.length - 1;
-            setMainImage("/downloads/" + images[currentIndex], currentIndex);
+            if (images.length > 0) {
+                setMainImage(images[currentIndex], currentIndex);
+            }
         }
     </script>
 </body>

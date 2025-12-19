@@ -1,41 +1,72 @@
+require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
-const low = require('lowdb');
-const FileSync = require('lowdb/adapters/FileSync');
-const sharp = require('sharp');
+const mongoose = require('mongoose');
+const cookieParser = require('cookie-parser');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
-// 1. Setup Database
-const adapter = new FileSync('db.json');
-const db = low(adapter);
-db.defaults({ items: [] }).write();
+// Configure Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Cloudinary Storage for Multer
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'sokmean_products',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+        transformation: [{ width: 1200, crop: 'limit', quality: 'auto' }]
+    }
+});
+const upload = multer({ storage: storage });
+
+// MongoDB Connection
+mongoose.connect(process.env.MONGODB_URI)
+    .then(() => console.log('✅ Connected to MongoDB'))
+    .catch(err => console.error('❌ MongoDB connection error:', err));
+
+// Product Schema
+const productSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    category: { type: String, default: 'Other' },
+    description: { type: String, default: 'No description provided.' },
+    price: { type: Number, default: 0 },
+    imageUrls: [String],
+    fileUrl: String,
+    date: { type: String, default: () => new Date().toLocaleDateString() }
+});
+const Product = mongoose.model('Product', productSchema);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 2. Setup File Uploads (Memory for Sharp processing)
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
-
-// 3. Settings
+// Settings
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 app.use(express.static('public'));
-app.use('/downloads', express.static('uploads'));
-
-if (!fs.existsSync('./uploads')) { fs.mkdirSync('./uploads'); }
 
 // --- ROUTES ---
 
 // Home Page
-app.get('/', (req, res) => {
-    let items = db.get('items').value();
-    const selectedCategory = req.query.cat || 'All';
-    if (selectedCategory !== 'All') {
-        items = items.filter(item => item.category === selectedCategory);
+app.get('/', async (req, res) => {
+    try {
+        let query = {};
+        const selectedCategory = req.query.cat || 'All';
+        if (selectedCategory !== 'All') {
+            query.category = selectedCategory;
+        }
+        const items = await Product.find(query).sort({ _id: -1 });
+        res.render('index', { items, selectedCategory });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error loading products');
     }
-    res.render('index', { items, selectedCategory });
 });
 
 // About Us Page
@@ -44,83 +75,106 @@ app.get('/about', (req, res) => {
 });
 
 // Product Detail Page
-app.get('/product/:id', (req, res) => {
-    const item = db.get('items').find({ id: req.params.id }).value();
-    if (!item) return res.redirect('/');
-    res.render('product-detail', { item });
+app.get('/product/:id', async (req, res) => {
+    try {
+        const item = await Product.findById(req.params.id);
+        if (!item) return res.redirect('/');
+        res.render('product-detail', { item });
+    } catch (error) {
+        console.error(error);
+        res.redirect('/');
+    }
 });
 
 // Admin Authentication Middleware
 const ADMIN_USER = 'SOKMEAN';
-const ADMIN_PASS = 'sokmean12311321'; // Change this password!
+const ADMIN_PASS = 'sokmean12311321';
+const AUTH_TOKEN = 'sokmean_admin_secret_2024';
 
 function adminAuth(req, res, next) {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-        res.setHeader('WWW-Authenticate', 'Basic realm="Admin Area"');
-        return res.status(401).send('Authentication required');
-    }
-    const auth = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
-    const user = auth[0];
-    const pass = auth[1];
-    if (user === ADMIN_USER && pass === ADMIN_PASS) {
+    if (req.cookies.adminToken === AUTH_TOKEN) {
         return next();
     }
-    res.setHeader('WWW-Authenticate', 'Basic realm="Admin Area"');
-    return res.status(401).send('Invalid credentials');
+    return res.redirect('/login');
 }
 
-// Admin Dashboard (Protected)
-app.get('/admin', adminAuth, (req, res) => {
-    const items = db.get('items').value();
-    res.render('admin', { items });
+// Login Page
+app.get('/login', (req, res) => {
+    res.render('login', { error: null });
 });
 
-// Handle New Post with Optimization (Protected)
-app.post('/post-item', adminAuth, upload.fields([
-    { name: 'productImages', maxCount: 20 },
-    { name: 'myFile', maxCount: 1 }
-]), async (req, res) => {
+// Login Handler
+app.post('/admin-login', (req, res) => {
+    const { username, password } = req.body;
+    if (username === ADMIN_USER && password === ADMIN_PASS) {
+        res.cookie('adminToken', AUTH_TOKEN, { httpOnly: true, maxAge: 60000 });
+        return res.redirect('/admin');
+    }
+    res.render('login', { error: 'Invalid username or password!' });
+});
+
+// Logout
+app.get('/logout', (req, res) => {
+    res.clearCookie('adminToken');
+    res.redirect('/');
+});
+
+// Admin Dashboard
+app.get('/admin', adminAuth, async (req, res) => {
     try {
-        const files = req.files;
-        const imageList = [];
-        if (files['productImages']) {
-            for (const file of files['productImages']) {
-                const filename = Date.now() + '-' + Math.round(Math.random() * 1E9) + '.webp';
-                await sharp(file.buffer)
-                    .resize(1200, null, { withoutEnlargement: true })
-                    .webp({ quality: 80 })
-                    .toFile(path.join(__dirname, 'uploads', filename));
-                imageList.push(filename);
-            }
-        }
-        let downloadFileName = null;
-        if (files['myFile']) {
-            const file = files['myFile'][0];
-            downloadFileName = Date.now() + '-' + file.originalname;
-            fs.writeFileSync(path.join(__dirname, 'uploads', downloadFileName), file.buffer);
-        }
-        const newItem = {
-            id: Date.now().toString(),
+        const items = await Product.find().sort({ _id: -1 });
+        res.render('admin', { items });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error loading admin');
+    }
+});
+
+// Handle New Post with Cloudinary Upload
+app.post('/post-item', adminAuth, upload.array('productImages', 20), async (req, res) => {
+    try {
+        const imageUrls = req.files ? req.files.map(file => file.path) : [];
+
+        const newProduct = new Product({
             name: req.body.itemName,
             category: req.body.category || 'Other',
             description: req.body.description || 'No description provided.',
             price: parseFloat(req.body.itemPrice) || 0,
-            imageNames: imageList,
-            fileName: downloadFileName,
-            date: new Date().toLocaleDateString()
-        };
-        db.get('items').push(newItem).write();
-        res.redirect('/');
+            imageUrls: imageUrls
+        });
+
+        await newProduct.save();
+        res.cookie('adminToken', AUTH_TOKEN, { httpOnly: true, maxAge: 60000 });
+        res.redirect('/admin');
     } catch (error) {
         console.error(error);
-        res.status(500).send("Error uploading.");
+        res.status(500).send('Error uploading product');
     }
 });
 
-app.post('/delete-item/:id', adminAuth, (req, res) => {
-    db.get('items').remove({ id: req.params.id }).write();
-    res.redirect('/admin');
+// Delete Product
+app.post('/delete-item/:id', adminAuth, async (req, res) => {
+    try {
+        await Product.findByIdAndDelete(req.params.id);
+        res.cookie('adminToken', AUTH_TOKEN, { httpOnly: true, maxAge: 60000 });
+        res.redirect('/admin');
+    } catch (error) {
+        console.error(error);
+        res.redirect('/admin');
+    }
+});
+
+// Update Price
+app.post('/update-price/:id', adminAuth, async (req, res) => {
+    try {
+        const newPrice = parseFloat(req.body.newPrice) || 0;
+        await Product.findByIdAndUpdate(req.params.id, { price: newPrice });
+        res.cookie('adminToken', AUTH_TOKEN, { httpOnly: true, maxAge: 60000 });
+        res.redirect('/admin');
+    } catch (error) {
+        console.error(error);
+        res.redirect('/admin');
+    }
 });
 
 app.listen(PORT, () => {
