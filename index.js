@@ -14,8 +14,8 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Cloudinary Storage for Multer
-const storage = new CloudinaryStorage({
+// Cloudinary Storage for Images
+const imageStorage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
         folder: 'sokmean_products',
@@ -23,7 +23,18 @@ const storage = new CloudinaryStorage({
         transformation: [{ width: 1200, crop: 'limit', quality: 'auto' }]
     }
 });
-const upload = multer({ storage: storage });
+
+// Cloudinary Storage for Raw Files (IPA, ZIP, etc.)
+const fileStorage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'sokmean_files',
+        resource_type: 'raw'
+    }
+});
+
+const uploadImages = multer({ storage: imageStorage });
+const uploadFiles = multer({ storage: fileStorage });
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
@@ -130,17 +141,57 @@ app.get('/admin', adminAuth, async (req, res) => {
     }
 });
 
-// Handle New Post with Cloudinary Upload
-app.post('/post-item', adminAuth, upload.array('productImages', 20), async (req, res) => {
+// Handle New Post with Cloudinary Upload (Images + Files)
+const memoryUpload = multer({ storage: multer.memoryStorage() });
+
+app.post('/post-item', adminAuth, memoryUpload.fields([
+    { name: 'productImages', maxCount: 20 },
+    { name: 'myFile', maxCount: 1 }
+]), async (req, res) => {
     try {
-        const imageUrls = req.files ? req.files.map(file => file.path) : [];
+        const imageUrls = [];
+        let fileUrl = null;
+
+        // Upload images to Cloudinary
+        if (req.files['productImages']) {
+            for (const file of req.files['productImages']) {
+                const result = await new Promise((resolve, reject) => {
+                    const stream = cloudinary.uploader.upload_stream(
+                        { folder: 'sokmean_products', transformation: [{ width: 1200, crop: 'limit', quality: 'auto' }] },
+                        (error, result) => {
+                            if (error) reject(error);
+                            else resolve(result);
+                        }
+                    );
+                    stream.end(file.buffer);
+                });
+                imageUrls.push(result.secure_url);
+            }
+        }
+
+        // Upload file (IPA, etc.) to Cloudinary as raw
+        if (req.files['myFile'] && req.files['myFile'][0]) {
+            const file = req.files['myFile'][0];
+            const result = await new Promise((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream(
+                    { folder: 'sokmean_files', resource_type: 'raw', public_id: file.originalname },
+                    (error, result) => {
+                        if (error) reject(error);
+                        else resolve(result);
+                    }
+                );
+                stream.end(file.buffer);
+            });
+            fileUrl = result.secure_url;
+        }
 
         const newProduct = new Product({
             name: req.body.itemName,
             category: req.body.category || 'Other',
             description: req.body.description || 'No description provided.',
             price: parseFloat(req.body.itemPrice) || 0,
-            imageUrls: imageUrls
+            imageUrls: imageUrls,
+            fileUrl: fileUrl
         });
 
         await newProduct.save();
@@ -148,7 +199,7 @@ app.post('/post-item', adminAuth, upload.array('productImages', 20), async (req,
         res.redirect('/admin');
     } catch (error) {
         console.error(error);
-        res.status(500).send('Error uploading product');
+        res.status(500).send('Error uploading product: ' + error.message);
     }
 });
 

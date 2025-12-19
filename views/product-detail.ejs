@@ -263,8 +263,8 @@
                 </div>
             </div>
 
-            <% if (item.fileName) { %>
-                <a href="/downloads/<%= item.fileName %>" class="buy-btn" download>Download Now</a>
+            <% if (item.fileUrl) { %>
+                <a href="<%= item.fileUrl %>" class="buy-btn" download>Download Now</a>
                 <% } else { %>
                     <a href="/about" class="buy-btn">Contact Us</a>
                     <% } %>
