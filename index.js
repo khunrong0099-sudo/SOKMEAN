@@ -196,7 +196,7 @@ app.post('/post-item', adminAuth, memoryUpload.fields([
 
         await newProduct.save();
         res.cookie('adminToken', AUTH_TOKEN, { httpOnly: true, maxAge: 60000 });
-        res.redirect('/admin');
+        res.status(200).json({ success: true, message: 'Product uploaded successfully!' });
     } catch (error) {
         console.error(error);
         res.status(500).send('Error uploading product: ' + error.message);
