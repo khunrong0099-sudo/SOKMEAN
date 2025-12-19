@@ -50,14 +50,34 @@ app.get('/product/:id', (req, res) => {
     res.render('product-detail', { item });
 });
 
-// Admin Dashboard
-app.get('/admin', (req, res) => {
+// Admin Authentication Middleware
+const ADMIN_USER = 'SOKMEAN';
+const ADMIN_PASS = 'sokmean12311321'; // Change this password!
+
+function adminAuth(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        res.setHeader('WWW-Authenticate', 'Basic realm="Admin Area"');
+        return res.status(401).send('Authentication required');
+    }
+    const auth = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
+    const user = auth[0];
+    const pass = auth[1];
+    if (user === ADMIN_USER && pass === ADMIN_PASS) {
+        return next();
+    }
+    res.setHeader('WWW-Authenticate', 'Basic realm="Admin Area"');
+    return res.status(401).send('Invalid credentials');
+}
+
+// Admin Dashboard (Protected)
+app.get('/admin', adminAuth, (req, res) => {
     const items = db.get('items').value();
     res.render('admin', { items });
 });
 
-// Handle New Post with Optimization
-app.post('/post-item', upload.fields([
+// Handle New Post with Optimization (Protected)
+app.post('/post-item', adminAuth, upload.fields([
     { name: 'productImages', maxCount: 20 },
     { name: 'myFile', maxCount: 1 }
 ]), async (req, res) => {
@@ -98,7 +118,7 @@ app.post('/post-item', upload.fields([
     }
 });
 
-app.post('/delete-item/:id', (req, res) => {
+app.post('/delete-item/:id', adminAuth, (req, res) => {
     db.get('items').remove({ id: req.params.id }).write();
     res.redirect('/admin');
 });
